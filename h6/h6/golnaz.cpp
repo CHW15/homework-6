@@ -39,7 +39,7 @@ bool is_valid_Type_of_band(string);
 bool is_valid_Type_of_instrument(string);
 bool is_valid_Orientation1(string);
 bool is_valid_Orientation2(string);
-bool read_input(string &, Satation_records, int, int &, int);
+bool read_input(string &, station, int, int &, int);
 
 void print_message(ofstream &, string );
 void print_position(ofstream &, ostream &, int &);
@@ -126,7 +126,7 @@ int main() {
 
 	if (mm != year) {
 		if (is_valid_date(mm, day, year) == 0) {
-			print_message(logfile, cout, "date of earthquake is not valid");
+			print_message(logfile, "date of earthquake is not valid");
 			exit(0);
 		}
 		else { cout << mm << "/" << day << "/" << year << "\n"; }
@@ -155,7 +155,7 @@ int main() {
 		if (mm != year) {
 			cout << mm << "/" << day << "/" << year << "\n";
 			if (!is_valid_date(mm, day, year)) {
-				print_message(logfile, cout, "Date of the earthquake is not valid");
+				print_message(logfile, "Date of the earthquake is not valid");
 				// exit(0);
 			}
 		}
@@ -184,7 +184,7 @@ int main() {
 
 	cout << hr << ":" << min << ":" << sec << "\n";
 	if (is_valid_time(hr, min, sec) == 0) {
-		print_message ( logfile, cout, "Time of earthquake is not valid" );
+		print_message ( logfile, "Time of earthquake is not valid" );
 		exit(0);
 	}
 
@@ -197,7 +197,7 @@ int main() {
 	cout << cstr;
 	tzl = strlen(cstr);
 	if (tzl != 3) {
-		print_message(logfile, cout, "Time_zone is not valid");
+		print_message(logfile, "Time_zone is not valid");
 		exit(0);
 	}
 
@@ -218,20 +218,20 @@ int main() {
 	// Magnitude properties:
 	inputfile >> magnitude_type;
 	if (!is_valid_magnitude_type(magnitude_type)) {
-		print_message(logfile, cout, "The magnitude_type is not valid");
+		print_message(logfile, "The magnitude_type is not valid");
 		// exit(0);
 	}
 
 	inputfile >> magnitude_size;
 	if (magnitude_size <= 0) {
-		print_message(logfile, cout, "The magnitude_size is not valid");
+		print_message(logfile, "The magnitude_size is not valid");
 		//exit(0);
 	}
 
-	print_message(logfile, cout, "Header read correctly!");
+	print_message(logfile, "Header read correctly!");
 
 	// Generating the log files
-	
+
 	open_file(outputfile, cout, "golnaz.out");
 
 	// Print the header in the outputfile:
@@ -244,32 +244,32 @@ int main() {
 
 	// Calling the read_input function
 
-	Satation_records Records[MAXSIZE];
+	station Records[MAXSIZE];
 	int Num_of_read_entries;
 	int entry_pos;
 	int Valid_entries;     // aaya bayad har motoghayer ra 2bar tarif konim?
 
-		if (!read_input(logfilename, Records, Valid_entries, Num_of_read_entries, entry_pos)) {
-			print_message(logfile, cout, "Problems opening database file");
-			return 0;
-		}
+	if (!read_input(logfilename, Records, Valid_entries, Num_of_read_entries, entry_pos)) {
+		print_message(logfile, "Problems opening database file");
+		return 0;
+	}
 
-		int AA = (Num_of_read_entries - Valid_entries);
+	int AA = (Num_of_read_entries - Valid_entries);
 
-		outputfile << Valid_entries << "\n";
-		print_message(logfile, cout, "Total invalid entries ignored:");
-		print_position(logfile, cout, AA);
-		print_message(logfile, cout, "Total valid entries read:");
-		print_position(logfile, cout, Valid_entries);
-		print_message(logfile, cout, "Total signal name produced");
-		print_position(logfile, cout, MAXSIZE);
-		print_message(logfile, cout, "Finished!");
+	outputfile << Valid_entries << "\n";
+	print_message(logfile, "Total invalid entries ignored:");
+	print_position(logfile, cout, AA);
+	print_message(logfile, "Total valid entries read:");
+	print_position(logfile, cout, Valid_entries);
+	print_message(logfile, "Total signal name produced");
+	print_position(logfile, cout, MAXSIZE);
+	print_message(logfile, "Finished!");
 
-		for (int i = 0; i < MAXSIZE; i++) {
-			
-			outputfile << Network_code_to_name_string(Records[i].net_code) << "." << Records[i].Station_Name 
-				<< "." << Type_of_instrument_string(Records[i].inst_type) << Orientation_to_string(Records[i].orientation) << endl;
-		}
+	for (int i = 0; i < MAXSIZE; i++) {
+
+		outputfile << Network_code_to_name_string(Records[i].net_code) << "." << Records[i].Station_Name 
+			<< "." << Type_of_instrument_string(Records[i].inst_type) << Orientation_to_string(Records[i].orientation) << endl;
+	}
 
 	outputfile.close();
 
@@ -284,7 +284,7 @@ void open_input(ifstream inputfile, ofstream & logfile, ostream & stream, string
 
 	// Prompt the user for an input file
 	cout << "Enter input file name: ";
-    cin >> inputfilename;
+	cin >> inputfilename;
 
 	inputfile.open(inputfilename.c_str());
 
@@ -576,9 +576,26 @@ bool is_valid_Orientation2(string orientation) {                                
 		|| (ss == "213") || (ss == "231") || (ss == "312") || (ss == "321"));
 }
 
+// Defining the earthquake struct of event report propertires
+
+struct header {
+	string id;
+	string date;
+	string day;
+	string year;
+	string time;
+	string timeZone;
+	string earthquake_name;
+	string latitude;
+	string longtidue;
+	string magnitude_type;
+	string magnitude;
+	string Enumber;
+};
+
 // Defining the main struct of event report propertires
 
-struct Satation_records {
+struct station {
 	Net_code     net_code;
 	string       Station_Name;
 	Band_Type    band_type;
@@ -590,7 +607,7 @@ const int MAXSIZE = 300;
 
 // read the input -- pass back whether error or normal as result
 // stations' ID is in db
-bool read_input(string & logfilename, Satation_records db[MAXSIZE], int Valid_entries, int & code, int entry_pos) {
+bool read_input(string & logfilename, station db[MAXSIZE], int Valid_entries, int & code, int entry_pos) {
 
 	string net_code;
 	string band_type;

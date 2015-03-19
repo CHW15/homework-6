@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <numeric>
 #include <cstring>
+#include <cctype>
 
 using namespace std;
 
@@ -46,19 +47,19 @@ void print_position(ofstream &, ostream &, int &);
 void open_input(ifstream, ofstream &, ostream &, string);
 void open_file(ofstream &, ostream &, string);
 
-string Month_Num_to_namestring(Months);
-string magnitude_type_to_string(Mag_type);
-string Network_code_to_name_string(Net_code);
+string Month_Num2namestr(Months);
+string mag_type2str(Mag_type);
+string Netcode2namestr(Net_code);
 string Type_of_band_to_string(Band_Type);
-string Type_of_instrument_string(Inst_Type);
+string Inst_Type2str(Inst_Type);
 string Orientation_to_string(Orientation);
 string uppercase(string &);
 
-Months number_to_months(int);
-Mag_type string_to_Mag_type(string);
-Net_code string_to_Net_code(string);
-Band_Type string_to_Band_Type(string);
-Inst_Type string_to_Inst_Type(string);
+Months month_num2enum(int);
+Mag_type str2Mag_type(string);
+Net_code str2Net_code(string);
+Band_Type string_to_Band_Type(string, Band_Type);
+Inst_Type Inst_Type_str2enum (string, Inst_Type);
 Orientation string_to_Orientation(string);
 
 //================================================================================================/
@@ -106,22 +107,6 @@ int main() {
 
 	inputfile >> date;
 
-	// Case 1:
-
-	delimi_position = date.find_first_of("/");
-	m = date.substr(0, delimi_position);
-	stringstream(m) >> mm;
-	month << mm;
-
-	dy = date.substr(delimi_position + 1);
-
-	delimi_position = dy.find_first_of("/");
-	d = dy.substr(0, delimi_position);
-	stringstream(d) >> day;
-
-	y = dy.substr(delimi_position + 1);
-	stringstream(y) >> year;
-
 	// Check for date validation
 
 	if (mm != year) {
@@ -133,73 +118,18 @@ int main() {
 		//return 0;	
 	}
 
-	// Case 2 (delimiter is deferent):
-
-	if (mm == year) {
-		delimi_position = date.find_first_of("-");
-		m = date.substr(0, delimi_position);
-		stringstream(m) >> mm;
-		month << mm;
-
-		dy = date.substr(delimi_position + 1);
-
-		delimi_position = dy.find_first_of("-");
-		d = dy.substr(0, delimi_position);
-		stringstream(d) >> day;
-
-		y = dy.substr(delimi_position + 1);
-		stringstream(y) >> year;
-
-		// Check for date validation
-
-		if (mm != year) {
-			cout << mm << "/" << day << "/" << year << "\n";
-			if (!is_valid_date(mm, day, year)) {
-				print_message(logfile, "Date of the earthquake is not valid");
-				// exit(0);
-			}
-		}
-	}
-
 	// Read time of the event
 
 	cout << "line 389" << "\n";
 
 	inputfile >> time;
 
-	delimi_position = time.find_first_of(":");
-	Hr = time.substr(0, delimi_position);
-	stringstream(Hr) >> hr;
-
-	minsec = time.substr(delimi_position + 1);
-
-	delimi_position = minsec.find_first_of(":");
-	Min = minsec.substr(0, delimi_position);
-	stringstream(Min) >> min;
-
-	Sec = minsec.substr(delimi_position + 1);
-	stringstream(Sec) >> sec;
-
-	// Check for time validation
-
-	cout << hr << ":" << min << ":" << sec << "\n";
-	if (is_valid_time(hr, min, sec) == 0) {
-		print_message ( logfile, "Time of earthquake is not valid" );
-		exit(0);
-	}
 
 	// Read time_zone for the event
 
 	inputfile >> time_zone;
 	cout << "\n";
-	string str = time_zone;
-	const char *cstr = str.c_str();
-	cout << cstr;
-	tzl = strlen(cstr);
-	if (tzl != 3) {
-		print_message(logfile, "Time_zone is not valid");
-		exit(0);
-	}
+	
 
 	// Reading the third line for event name
 
@@ -236,7 +166,7 @@ int main() {
 
 	// Print the header in the outputfile:
 
-	outputfile << "# " << Month_Num_to_namestring(number_to_months(mm)) 
+	outputfile << "# " << Month_Num2namestr (month_num2enum (mm)) 
 		<< " " << day << " " << year << " " << time << " " << time_zone 
 		<< " " << magnitude_type << " " << magnitude_size << " " << readline3 
 		<< " " << "[" << event_ID << "]" << "(" << longitude << "," << " " 
@@ -267,8 +197,8 @@ int main() {
 
 	for (int i = 0; i < MAXSIZE; i++) {
 
-		outputfile << Network_code_to_name_string(Records[i].net_code) << "." << Records[i].Station_Name 
-			<< "." << Type_of_instrument_string(Records[i].inst_type) << Orientation_to_string(Records[i].orientation) << endl;
+		outputfile << Netcode2namestr(Records[i].net_code) << "." << Records[i].Station_Name 
+			<< "." << Inst_Type2str(Records[i].inst_type) << Orientation_to_string(Records[i].orientation) << endl;
 	}
 
 	outputfile.close();
@@ -358,7 +288,205 @@ enum Orientation {
 	Z,
 };
 
-string Month_Num_to_namestring(Months aa) {
+// Functions for input header inorder to check date and time validation 
+
+void check_date(ofstream & logfile, string date, string & month, string & day, string & year) {
+
+	int mm, dd, yyyy;
+
+	// Check for the date format (it must be mm/dd/year or mm-dd-year and 10 digits)
+
+	if (date.length() == 10) {
+
+		month = date.substr(0, 2);
+		stringstream(mm) >> month;
+		day = date.substr(3, 2);
+		stringstream(dd) >> day;
+		year = date.substr(6, 4);
+		stringstream(yyyy) >> year;
+
+		// meanwhile month, day and year should be valid numbers
+
+		if (!isdigit (mm || dd || yyyy)) {
+			print_message(logfile, "Error: Date of earthquake is not valid. ");
+			exit (EXIT_FAILURE);
+		} else {
+			if (mm < 0 || mm > 13 || dd < 0 || dd > 32 || yyyy < 1850 || yyyy > 2016) {
+				print_message(logfile, "Error: Date digits are not valid. ");
+				exit (EXIT_FAILURE);
+			}
+		}
+
+		if ((date[2] != '/' || date[5] != '/') && (date[2] != '-' || date[5] != '-')) {
+			print_message(logfile, "Error: Date format is not valid. ");
+			exit (EXIT_FAILURE);
+		}
+	} else {
+		print_message(logfile, "Error: Date of earthquake is not valid. ");
+		exit (EXIT_FAILURE);
+	}
+
+}
+
+void check_time(ofstream & logfile, string time, string & hour, string & minute, string & second, string millisecond) {
+
+	int hr, min, sec;
+
+	// Check for the time format (must be hh:mm:ss.fff and 12 digits)
+
+	if (time.length() == 12) {
+
+		hour = time.substr(0, 2);
+		stringstream(hr) >> hour;
+		minute = time.substr(3, 2);
+		stringstream(min) >> minute;
+		second = time.substr(6, 2);
+		stringstream(sec) >> second;
+		millisecond = time.substr(9, 3);
+
+		//  Meanwhile the hour, minute, second should be valid numbers
+
+		if (!isdigit(hr || min || sec)) {
+			print_message(logfile, "Error: Time of earthquake is not valid.");
+		} else {
+			if (hr < 0 || hr > 24 || min < 0 || min > 60 || sec < 0.0009 || sec > 59.9999 ) {
+				print_message(logfile, "Error: Time digits are not valid. ");
+				exit (EXIT_FAILURE);
+			}
+		}
+		if (time[2] != ':' || time[5] != ':' || time[8] != '.') {
+			print_message(logfile, "Error: Time format is not valid.");
+			exit (EXIT_FAILURE);
+		} else {
+			print_message(logfile, "Error: Time of earthquake is not valid.");
+			exit (EXIT_FAILURE);
+		}
+	}
+}
+
+void check_time_zone(ofstream & logfile, string time_zone) {
+	
+	int tzl = 0;
+	string str = time_zone;
+	const char *cstr = str.c_str();
+	tzl = strlen(cstr);
+	if ((tzl != 3) || (!isalpha (time_zone[0])) || (!isalpha (time_zone[1])) || (!isalpha (time_zone[2]))) {
+		print_message(logfile, "Error: Time_zone is not valid");
+		exit (EXIT_FAILURE);
+	}
+}
+
+// Functions for converting the entries to uppercase and check for validation 
+
+string uppercase(string & s) {
+	string result = s;
+	for (int i = 0; i < (int)result.size(); i++)
+		result[i] = toupper(result[i]);
+	return result;
+}
+
+void check_magnitude(ofstream & logfile, string magnitude_type, float magnitude_size) {
+
+	if ( magnitude_size < 0 ) {
+		print_message(logfile, "Error: The magnitude_size is not valid");
+		exit (EXIT_FAILURE);
+	}
+	string mt = uppercase(magnitude_type);
+	if ((mt == "ML") || (mt == "MS") || (mt == "MB") || (mt == "MW"));
+	print_message(logfile, "Error: The magnitude_type is not valid");
+	exit (EXIT_FAILURE);
+}
+
+bool is_valid_Network_code(string net_code) {
+
+	if (net_code.compare("CE") == 0 ) return true;
+	if (net_code.compare("CI") == 0 ) return true;
+	if (net_code.compare("FA") == 0 ) return true;
+	if (net_code.compare("NP") == 0 ) return true;
+	if (net_code.compare("WR") == 0 ) return true;
+	else return false;
+}
+
+bool is_valid_Station_code(string Stati_code) {                // 3 capital alphabetic character or 5 numeric characters
+
+	if (Stati_code.length() == 5 && isdigit(Stati_code[0,5])) {
+		return true;
+	}
+
+	if (Stati_code.length() == 3 && isalpha(Stati_code[0,3])) {
+		if (isupper(Stati_code[0,3])) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool is_valid_Type_of_band(string Band_type, Band_Type band_type) {
+
+	string ss = uppercase(Band_type);
+	if (ss == "LONG-PERIOD") {
+		band_type = LongPeriod;
+		return true;
+	}
+	if (ss == "SHORT_PERIOD") {
+		band_type = ShortPeriod;
+		return true;
+	}
+	if (ss == "BROADBAND") {
+		band_type = Broadband;
+		return true;
+	}
+	return false;
+}
+
+bool is_valid_Type_of_instrument(string instrumenType, Inst_Type inst_type ) {
+
+	string ss = uppercase(instrumenType);
+	if (ss == "HIGH-GAIN") {
+		inst_type = HighGain;
+		return true;
+	}
+	if (ss == "LOW-GAIN") {
+		inst_type = LowGain;
+		return true;
+	}
+	if (ss == "ACCELEROMETER") {
+		inst_type = Accelerometer;
+		return true;
+	}
+	return false;
+}
+
+bool is_valid_Orientation (string orientation) {
+
+	// it is case insensitive so convert it to the uppercase and compare it
+	string ss = uppercase(orientation);
+
+	if (ss.length() < 4) {
+		if (isdigit(ss[0])) {
+            for (int i = 0; i < ss.length(); i++) {
+                if (!isdigit(ss[i])) {
+                    return false;
+                }
+            }
+
+            return true;
+        } else if (isalpha(ss[0])) {
+            for (int i = 0; i < ss.length(); i++) {
+                if (ss[i] != 'N' && ss[i] != 'E' && ss[i] != 'Z') {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    }
+
+    return false;
+
+} 
+
+string Month_Num2namestr (Months aa) {
 	switch (aa) {
 	case January:   return "January";
 	case February:  return "February";
@@ -376,7 +504,7 @@ string Month_Num_to_namestring(Months aa) {
 	exit(EXIT_FAILURE);
 }
 
-Months number_to_months(int a){
+Months month_num2enum (int a){
 
 	if (a == 1)  return January;
 	if (a == 2)  return February;
@@ -394,9 +522,9 @@ Months number_to_months(int a){
 	exit(EXIT_FAILURE);
 }
 
-string magnitude_type_to_string(Mag_type bb) {
+string mag_type2str(Mag_type bb) {
 	switch (bb) {
-	case ML:  return "ML";
+	case ML:  return "Ml";
 	case Mb:  return "Mb";
 	case Ms:  return "Ms";
 	case Mw:  return "Mw";
@@ -405,7 +533,7 @@ string magnitude_type_to_string(Mag_type bb) {
 	exit(EXIT_FAILURE);
 }
 
-Mag_type string_to_Mag_type(string b){
+Mag_type str2Mag_type(string b){
 
 	string ss = uppercase(b);
 
@@ -418,7 +546,7 @@ Mag_type string_to_Mag_type(string b){
 	exit(EXIT_FAILURE);
 }
 
-string Network_code_to_name_string(Net_code cc) {
+string Net_code2namestr(Net_code cc) {
 	switch (cc) {
 	case CE:   return "CE";
 	case CI:   return "CI";
@@ -430,7 +558,7 @@ string Network_code_to_name_string(Net_code cc) {
 	exit(EXIT_FAILURE);
 }
 
-Net_code string_to_Net_code(string c){
+Net_code str2Net_code(string c){
 
 	string ss = uppercase(c);
 
@@ -444,7 +572,7 @@ Net_code string_to_Net_code(string c){
 	exit(EXIT_FAILURE);
 }
 
-string Type_of_band_to_string(Band_Type dd) {
+string Type_of_band2str (Band_Type dd) {
 	switch (dd) {
 	case LongPeriod:   return "L";
 	case ShortPeriod:  return "B";
@@ -454,7 +582,7 @@ string Type_of_band_to_string(Band_Type dd) {
 	exit(EXIT_FAILURE);
 }
 
-Band_Type string_to_Band_Type(string d){
+Band_Type str2Band_Type(string d){
 
 	string ss = uppercase(d);
 
@@ -466,7 +594,7 @@ Band_Type string_to_Band_Type(string d){
 	exit(EXIT_FAILURE);
 }
 
-string Type_of_instrument_string(Inst_Type ee) {
+string Inst_Type2str(Inst_Type ee) {
 	switch (ee) {
 	case HighGain:       return "H";
 	case LowGain:        return "L";
@@ -476,7 +604,7 @@ string Type_of_instrument_string(Inst_Type ee) {
 	exit(EXIT_FAILURE);
 }
 
-Inst_Type string_to_Inst_Type(string e){
+Inst_Type Inst_Type_str2enum (string e){
 
 	string ss = uppercase(e);
 
@@ -488,7 +616,7 @@ Inst_Type string_to_Inst_Type(string e){
 	exit(EXIT_FAILURE);
 }
 
-string Orientation_to_string(Orientation ff) {
+string Orientation2str(Orientation ff) {
 	switch (ff) {
 	case N:   return "N";
 	case E:   return  "E";
@@ -498,7 +626,7 @@ string Orientation_to_string(Orientation ff) {
 	exit(EXIT_FAILURE);
 }
 
-Orientation string_to_Orientation(string f) {                // this part needs correction????
+Orientation str2Orientation(string f) {                // this part needs correction????
 
 	string ss = uppercase(f);
 
@@ -508,72 +636,6 @@ Orientation string_to_Orientation(string f) {                // this part needs 
 
 	// It should never get here!!
 	exit(EXIT_FAILURE);
-}
-
-// Functions for input header inorder to check date and time validation 
-
-bool is_valid_date(int & mm, int & dd, int & yyyy) {
-	bool date_f = 1;
-	if (mm < 0 || mm > 13) { date_f = 0; }
-	if (dd < 0 || dd > 32) { date_f = 0; }
-	if (yyyy < 1850 || yyyy > 2016) { date_f = 0; }
-	return date_f;
-}
-
-bool is_valid_time(int hr, int min, int sec) {
-	bool time_f = 1;
-	if (hr < 0 || hr > 24) { time_f = 0; }
-	if (min < 0 || min > 60) { time_f = 0; }
-	if (sec < 0.0009 || sec > 59.9999) { time_f = 0; }
-	return time_f;
-}
-
-// Functions for converting the entries to uppercase and check for validation 
-
-string uppercase(string & s) {
-	string result = s;
-	for (int i = 0; i < (int)result.size(); i++)
-		result[i] = toupper(result[i]);
-	return result;
-}
-
-bool is_valid_magnitude_type(string magnitude_type) {
-	string ss = uppercase(magnitude_type);
-	return((ss == "Ml") || (ss == "Ms") || (ss == "Mb") || (ss == "Mw"));
-}
-
-bool is_valid_Network_code(string net_code) {
-	string ss = net_code;
-	return((ss == "CE") || (ss == "CI") || (ss == "FA") || (ss == "NP") || (ss == "WR"));
-}
-
-bool is_valid_Station_code(string Stati_code) {                // 3 capital alphabetic character or 5 numeric characters
-	string ss = Stati_code;
-	return((ss == "CE"));
-}
-
-bool is_valid_Type_of_band(string Band_type) {
-	string ss = uppercase(Band_type);
-	return((ss == "LONG-PERIOD") || (ss == "SHORT_PERIOD") || (ss == "BROAD-BAND"));
-}
-
-bool is_valid_Type_of_instrument(string inst_type) {
-	string ss = uppercase(inst_type);
-	return((ss == "HIGH-GAIN") || (ss == "LOW-GAIN") || (ss == "ACCELEROMETER"));
-}
-
-bool is_valid_Orientation1(string orientation) {
-	string ss = uppercase(orientation);
-	return((ss == "N") || (ss == "E") || (ss == "Z") || (ss == "NE") || (ss == "NZ") ||
-		(ss == "EN") || (ss == "EZ") || (ss == "ZN") || (ss == "ZE") || (ss == "EZN") ||
-		(ss == "ENZ") || (ss == "ZNE") || (ss == "ZEN") || (ss == "NZE") || (ss == "NEZ"));
-}
-
-bool is_valid_Orientation2(string orientation) {                                               // nneds more think and correction????
-	string ss = orientation;
-	return((ss == "1") || (ss == "2") || (ss == "3") || (ss == "12") || (ss == "13") || (ss == "21")
-		|| (ss == "23") || (ss == "31") || (ss == "32") || (ss == "123") || (ss == "132")
-		|| (ss == "213") || (ss == "231") || (ss == "312") || (ss == "321"));
 }
 
 // Defining the earthquake struct of event report propertires
@@ -589,7 +651,7 @@ struct header {
 	string latitude;
 	string longtidue;
 	string magnitude_type;
-	string magnitude;
+	string magnitude_size;
 	string Enumber;
 };
 
@@ -611,10 +673,9 @@ bool read_input(string & logfilename, station db[MAXSIZE], int Valid_entries, in
 
 	string net_code;
 	string band_type;
-	string orientation;
 	string inst_type;
-	string orientation1;
-	int    orientation2;
+	string orientation;
+
 	ofstream outputfile;
 	ofstream logfile;
 	ifstream inputfile;
@@ -676,23 +737,17 @@ bool read_input(string & logfilename, station db[MAXSIZE], int Valid_entries, in
 			m++;
 		}
 
-		if (!is_valid_Orientation1(orientation)) {
+		if (!is_valid_Orientation (orientation)) {
 			print_message(logfile, "Entry # ");
 			print_position(logfile, cout, entry_pos);
 			print_message(logfile, "ignored. Invalid Orientation");
 			m++;
 
-		} else {
-			if (!is_valid_Orientation2(orientation)) {
-				print_message(logfile, "Entry # ");
-				print_position(logfile, cout, entry_pos);
-				print_message(logfile, "ignored. Invalid Orientation");
-				m++;
-
-				db[code].net_code = string_to_Net_code(net_code);
-				db[code].Stati_code = string_to_Band_Type(Stati_code);         // baresi lazem darad?
-				db[code].band_type = string_to_Band_Type(band_type);
-				db[code].inst_type = string_to_Inst_Type(inst_type);
+		}
+				db[code].net_code = str2Net_code(net_code);
+				db[code].Stati_code = str2Band_Type(Stati_code);         // baresi lazem darad?
+				db[code].band_type = str2Band_Type(band_type);
+				db[code].inst_type = Inst_Type_str2enum (inst_type);
 				db[code].orientation = string_to_Orientation(orientation);
 			}
 		}

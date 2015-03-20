@@ -1,13 +1,13 @@
 /****************************************************************************************************
 * Programming Tools for  Engineers and Scientists - HW5
 * by Golnaz Sarram
-* February 28th, 2015
+* March 15th, 2015
 
 * Github Repoitory: https://github.com/Golnaz15/homework5/blob/master/Project2/Project2/golnaz.cpp
 
 * Homework Description:
 * This code will check a collection reports of earthquake event from sesmic stations
-* using a arrays, enumerators, and structures. It creats an output file and a log file.
+* using arrays, enumerators, and structures. It creats an output file and a log file.
 ****************************************************************************************************/
 
 // Calling external libraries
@@ -28,6 +28,14 @@
 #include <cctype>
 
 using namespace std;
+
+// Global Variables are
+
+ofstream outputfile;
+ofstream logfile;
+ifstream inputfile;
+const int MAXSIZE = 300;
+string   inputfilename = "golnaz.in", outputfilename = "golnaz.out", logfilename = "golnaz.log";
 
 //======================================= Function Prototypes =====================================/
 
@@ -67,110 +75,19 @@ Orientation string_to_Orientation(string);
 
 int main() {
 
-	// Declare variable types:
-
-	string   inputfilename = "golnaz.in", outputfilename = "golnaz.out", logfilename = "golnaz.log";
-	ofstream outputfile;
-	ofstream logfile;
-	ifstream inputfile;
-
-	string   event_ID;
-	int day = 1, year = 1850, mm = 1, tzl = 0, i = 0;        // Date and Time variables in format : ("mm/dd/yyyy or mm-dd-yyyy hh:mm:ss.fff time_zone");
-	int hr = 0, min = 0, delimi_position = 0;
-	string date, time, m, dy, d, y, minsec, Hr, Min, Sec;
-	Months month;
-
-	string readline3;                                        // "Earthquake name"
-	string time_zone;
-	float  sec = 0;
-	char   tz;
-
-	double longitude = 0, latitude = 0, depth = 0;
-	string magnitude_type;
-	float magnitude_size;                                   // greater than 0 ( > 0) 
 	string station_code;
 
-	// Open input file
+	// Generating the inputfile, outputfile and logfile
 
 	open_input(inputfile, logfile, cout, inputfilename);
-
-	// Generating the log files
-
 	open_file(logfile, cout, "golnaz.log");
-
-	// Reading the input Header and check for the data correctness
-	// First line for event ID
-
-	inputfile >> event_ID;
-
-	// Reading second line for Datetime and time zone information
-
-	inputfile >> date;
-
-	// Check for date validation
-
-	if (mm != year) {
-		if (is_valid_date(mm, day, year) == 0) {
-			print_message(logfile, "date of earthquake is not valid");
-			exit(0);
-		}
-		else { cout << mm << "/" << day << "/" << year << "\n"; }
-		//return 0;	
-	}
-
-	// Read time of the event
-
-	cout << "line 389" << "\n";
-
-	inputfile >> time;
-
-
-	// Read time_zone for the event
-
-	inputfile >> time_zone;
-	cout << "\n";
-	
-
-	// Reading the third line for event name
-
-	inputfile.ignore();
-	getline(inputfile, readline3);
-
-	// Reading the fourth line for orintation and magnitude data
-
-	// Orintation entries:
-	inputfile >> longitude;
-	inputfile >> latitude;
-	inputfile >> depth;
-
-	cout << longitude << " " << latitude << " " << depth << "\n";
-
-	// Magnitude properties:
-	inputfile >> magnitude_type;
-	if (!is_valid_magnitude_type(magnitude_type)) {
-		print_message(logfile, "The magnitude_type is not valid");
-		// exit(0);
-	}
-
-	inputfile >> magnitude_size;
-	if (magnitude_size <= 0) {
-		print_message(logfile, "The magnitude_size is not valid");
-		//exit(0);
-	}
-
-	print_message(logfile, "Header read correctly!");
-
-	// Generating the log files
-
 	open_file(outputfile, cout, "golnaz.out");
 
-	// Print the header in the outputfile:
+	inputFile.close();
+    outputFile.close();
+	
+	// Reading the input Header and check for the data correctness
 
-	outputfile << "# " << Month_Num2namestr (month_num2enum (mm)) 
-		<< " " << day << " " << year << " " << time << " " << time_zone 
-		<< " " << magnitude_type << " " << magnitude_size << " " << readline3 
-		<< " " << "[" << event_ID << "]" << "(" << longitude << "," << " " 
-		<< latitude << "," << " " << depth << ")" << "\n";
 
 	// Calling the read_input function
 
@@ -328,7 +245,7 @@ void check_date(ofstream & logfile, string date, string & month, string & day, s
 
 }
 
-void check_time(ofstream & logfile, string time, string & hour, string & minute, string & second, string millisecond) {
+void check_time(ofstream & logfile, string time, string & hour, string & minute, string & second) {
 
 	int hr, min, sec;
 
@@ -342,7 +259,6 @@ void check_time(ofstream & logfile, string time, string & hour, string & minute,
 		stringstream(min) >> minute;
 		second = time.substr(6, 2);
 		stringstream(sec) >> second;
-		millisecond = time.substr(9, 3);
 
 		//  Meanwhile the hour, minute, second should be valid numbers
 
@@ -640,11 +556,9 @@ Orientation str2Orientation(string f) {                // this part needs correc
 
 // Defining the earthquake struct of event report propertires
 
-struct header {
+struct earthquake {
 	string id;
 	string date;
-	string day;
-	string year;
 	string time;
 	string timeZone;
 	string earthquake_name;
@@ -653,6 +567,12 @@ struct header {
 	string magnitude_type;
 	string magnitude_size;
 	string Enumber;
+};
+
+struct Date {
+	string day;
+	Months month;
+	string year;
 };
 
 // Defining the main struct of event report propertires
@@ -665,26 +585,99 @@ struct station {
 	Orientation  orientation;
 };
 
-const int MAXSIZE = 300;
+// Check the header of the input file
+bool check_input_header(ifstream &inputFile, ofstream &outputFile) {
+	// (string & logfilename, station db[MAXSIZE], int Valid_entries, int & code, int entry_pos) {
 
-// read the input -- pass back whether error or normal as result
-// stations' ID is in db
-bool read_input(string & logfilename, station db[MAXSIZE], int Valid_entries, int & code, int entry_pos) {
+	// Declare variable types:
+
+	int dd = 1, yyyy = 1850, mm = 1, i = 0;        // Date and Time variables in format : ("mm/dd/yyyy or mm-dd-yyyy hh:mm:ss.fff time_zone");
+	int hr = 0, min = 0;
+	float  sec = 0, magnitude_size;
+	double longitude = 0, latitude = 0, depth = 0;
+
+	string date, day, month, year, time, hour, minute, second;
+	string line, time_zone, magnitude_type;
+	
+	// First line for event ID
+
+	earthquake eq_info;
+	Date date_elements;
+
+	getline(inputFile, line);
+    stringstream eventID (line);
+    eventID >> eq_info.id;
+    
+    getline(inputFile, line);
+    stringstream datetime (line);
+    datetime >> eq_info.date;
+    datetime >> eq_info.time;
+    datetime >> eq_info.timeZone;
+
+    getline(inputFile, line);
+    eq_info.earthquake_name = line;
+
+    getline(inputFile, line);
+    stringstream epicenter (line);
+    epicenter >> eq_info.latitude;
+    epicenter >> eq_info.longtidue;
+    epicenter >> eq_info.Enumber;
+    epicenter >> eq_info.magnitude_type;
+    epicenter >> eq_info.magnitude_size;
+
+	// check the stored data validation
+
+	string Month_Num2namestr, day, year;
+
+	check_date(logfile, eq_info.date, Month_Num2namestr, date_elements.day, date_elements.year);
+	check_time(logfile, time, hour, minute, second);
+	check_time_zone(logfile, time_zone);
+	check_magnitude(logfile, magnitude_type, magnitude_size);
+
+	print_message(logfile, "Header read correctly!");
+
+	// Print the header in the outputfile:
+
+	outputfile << "# " << " " << Month_Num2namestr << " " << day << " " << year << " " 
+		<< time << " " << time_zone << " " << magnitude_type << " " << magnitude_size 
+		<< " " << eq_info.earthquake_name << " " << "[" << eq_info.id << "]" << "(" 
+		<< longitude << "," << " " << latitude << "," << " " << depth << ")" << "\n";
+}
+
+// Check the table of reports from input file and return the signals output
+bool check_input_signals(ifstream & inputFile, ofstream & outputFile) {
+	
+	station Records[MAXSIZE];
+	int Num_of_read_entries = 0;
+	int entry_pos = 0;
+	int Valid_entries;     
+	int code = 0;
+	int Valid_entries = 0;
+	int entry_pos = 0;
 
 	string net_code;
 	string band_type;
 	string inst_type;
 	string orientation;
 
-	ofstream outputfile;
-	ofstream logfile;
-	ifstream inputfile;
+	int AA = (Num_of_read_entries - Valid_entries);
 
-	code = 0;
-	Valid_entries = 0;
-	entry_pos = 0;
+	outputfile << Valid_entries << "\n";
+	print_message(logfile, "Total invalid entries ignored:");
+	print_position(logfile, cout, AA);
+	print_message(logfile, "Total valid entries read:");
+	print_position(logfile, cout, Valid_entries);
+	print_message(logfile, "Total signal name produced");
+	print_position(logfile, cout, MAXSIZE);
+	print_message(logfile, "Finished!");
 
-	while (Valid_entries < MAXSIZE) {              // or wile inputfile.eof()
+	for (int i = 0; i < MAXSIZE; i++) {
+
+		outputfile << Netcode2namestr(Records[i].net_code) << "." << Records[i].Station_Name 
+			<< "." << Inst_Type2str(Records[i].inst_type) << Orientation_to_string(Records[i].orientation) << endl;
+	}
+
+	while (inputFile >> net_code && Valid_entries < MAXSIZE) {              // or wile inputfile.eof()
 
 		int m = -1;
 

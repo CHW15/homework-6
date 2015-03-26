@@ -29,147 +29,17 @@
 
 using namespace std;
 
-// Global Variables are
+static const int MAXvalidentry = 300;
 
-ofstream outputfile;
-ofstream logfile;
-ifstream inputfile;
-const int MAXSIZE = 300;
-string   inputfilename = "golnaz.in", outputfilename = "golnaz.out", logfilename = "golnaz.log";
-
-//======================================= Function Prototypes =====================================/
-
-bool is_valid_date(int &, int &, int &);
-bool is_valid_time(int, int, int);
-bool is_valid_magnitude_type(string);
-bool is_valid_Network_code(string);
-bool is_valid_Station_code(string);
-bool is_valid_Type_of_band(string);
-bool is_valid_Type_of_instrument(string);
-bool is_valid_Orientation1(string);
-bool is_valid_Orientation2(string);
-bool read_input(string &, station, int, int &, int);
-
-void print_message(ofstream &, string );
-void print_position(ofstream &, ostream &, int &);
-void open_input(ifstream, ofstream &, ostream &, string);
-void open_file(ofstream &, ostream &, string);
-
-string Month_Num2namestr(Months);
-string mag_type2str(Mag_type);
-string Netcode2namestr(Net_code);
-string Type_of_band_to_string(Band_Type);
-string Inst_Type2str(Inst_Type);
-string Orientation_to_string(Orientation);
-string uppercase(string &);
-
-Months month_num2enum(int);
-Mag_type str2Mag_type(string);
-Net_code str2Net_code(string);
-Band_Type string_to_Band_Type(string, Band_Type);
-Inst_Type Inst_Type_str2enum (string, Inst_Type);
-Orientation string_to_Orientation(string);
-
-//================================================================================================/
-
-
-int main() {
-
-	string station_code;
-
-	// Generating the inputfile, outputfile and logfile
-
-	open_input(inputfile, logfile, cout, inputfilename);
-	open_file(logfile, cout, "golnaz.log");
-	open_file(outputfile, cout, "golnaz.out");
-
-	inputFile.close();
-    outputFile.close();
-	
-	// Reading the input Header and check for the data correctness
-
-
-	// Calling the read_input function
-
-	station Records[MAXSIZE];
-	int Num_of_read_entries;
-	int entry_pos;
-	int Valid_entries;     // aaya bayad har motoghayer ra 2bar tarif konim?
-
-	if (!read_input(logfilename, Records, Valid_entries, Num_of_read_entries, entry_pos)) {
-		print_message(logfile, "Problems opening database file");
-		return 0;
-	}
-
-	int AA = (Num_of_read_entries - Valid_entries);
-
-	outputfile << Valid_entries << "\n";
-	print_message(logfile, "Total invalid entries ignored:");
-	print_position(logfile, cout, AA);
-	print_message(logfile, "Total valid entries read:");
-	print_position(logfile, cout, Valid_entries);
-	print_message(logfile, "Total signal name produced");
-	print_position(logfile, cout, MAXSIZE);
-	print_message(logfile, "Finished!");
-
-	for (int i = 0; i < MAXSIZE; i++) {
-
-		outputfile << Netcode2namestr(Records[i].net_code) << "." << Records[i].Station_Name 
-			<< "." << Inst_Type2str(Records[i].inst_type) << Orientation_to_string(Records[i].orientation) << endl;
-	}
-
-	outputfile.close();
-
-	return 0;
-}
-
-//======================================== Declare functions ==========================================/
-
-// Function for printing the errors into the logfile and terminal
-
-void open_input(ifstream inputfile, ofstream & logfile, ostream & stream, string inputfilename) {
-
-	// Prompt the user for an input file
-	cout << "Enter input file name: ";
-	cin >> inputfilename;
-
-	inputfile.open(inputfilename.c_str());
-
-	if (inputfile.fail()) {
-		print_message(logfile, "Error: reading the file. ");
-		exit(EXIT_FAILURE);
-	}
-}
-
-void open_file(ofstream & file, ostream & stream, string filename) {
-
-	file.open(filename.c_str());
-
-	if (file.fail()) {
-		print_message(file, "Error: cannot open the file. ");
-		exit(EXIT_FAILURE);
-	}
-}
-
-void print_message(ofstream & logfile, string statement) {
-	logfile << statement << "\n";
-	cout << statement << "\n";
-	return;
-}
-
-// Function for printing the results into the outputfile and terminal
-
-void print_position(ofstream & logfile, ostream & stream, int & position) {
-	logfile << (position) << "\n";
-	cout << (position) << "\n";
-	return;
-}
-
-// Define enumerator types
+enum Band_Type {
+	LongPeriod,
+	ShortPeriod,
+	Broadband
+};
 
 enum Months {
-	January = 1, February, March, April, May, June, July, 
-	August, September, October, November, December 
+	January = 1, February, March, April, May, June, July,
+	August, September, October, November, December
 };
 
 enum Mag_type {                                  // case insensitive
@@ -187,46 +57,205 @@ enum Net_code {                                  // case sensitive
 	WR
 };
 
-enum Band_Type {
-	LongPeriod,
-	ShortPeriod,
-	Broadband
-};
-
 enum Inst_Type {
 	HighGain,
 	LowGain,
 	Accelerometer
 };
 
+/*
+
 enum Orientation {
-	N,
-	E,
-	Z,
+N,
+E,
+Z,
 };
+
+*/
+
+struct earthquake {
+	string id;
+	string date;
+	string time;
+	string timeZone;
+	string earthquake_name;
+	string latitude;
+	string longtidue;
+	string magnitude_type;
+	string magnitude_size;
+	string depth;
+};
+
+// Defining the main struct of event report propertires
+
+struct station {
+	Net_code     net_code;
+	string       Station_Name;
+	Band_Type    band_type;
+	Inst_Type    inst_type;
+	string  orientation;
+};
+
+//struct Date {
+//    string day;
+//    Months month;
+//    string year;
+//};
+
+// Global Variables are
+
+//ofstream outputifle;
+//ofstream logfile;
+//ifstream inputfile;
+
+string   inputfilename = "golnaz.in", outputiflename = "golnaz.out", logfilename = "golnaz.log";
+
+//================================= Function Prototypes ==================================/
+
+bool is_valid_date(int &, int &, int &);
+bool is_valid_time(int, int, int);
+bool is_valid_magnitude_type(string);
+bool is_valid_Network_code(string);
+bool is_valid_Station_code(string);
+bool is_valid_Type_of_band(string);
+bool is_valid_Type_of_instrument(string, Inst_Type inst_type);
+bool is_valid_Orientation(string);
+bool read_input(string, string, int, int &, int);
+bool check_input_header(ifstream &, ofstream &);
+bool check_input_signals(ifstream &, station entry[MAXvalidentry], int, int, int);
+
+void print_message(ofstream &, const string &);
+void print_position(ofstream &, ostream &, int &);
+void open_input(ifstream &, ofstream &, ostream &, string);
+void open_file(ofstream &, ostream &, string);
+void print_output(ofstream &, ofstream &, station, int, int, int);
+
+string get_Month_Num2namestr(Months);
+string get_mag_type2str(Mag_type);
+string get_Net_code2namestr(Net_code);
+string get_Type_of_band2str(Band_Type);
+string get_Inst_Type2str(Inst_Type);
+//string get_Orientation2str(Orientation);
+string uppercase(string &);
+
+Months month_num2enum(int);
+Mag_type str2Mag_type(string);
+Net_code str2Net_code(string);
+Band_Type str2Band_Type(string);
+Inst_Type Inst_Type_str2enum (string);
+//Orientation str2Orientation(string);
+
+//=========================================================================================/
+
+int main() {
+
+	string station_code;
+	ifstream inputfile;
+	ofstream outputfile,logfile;
+	station entry[MAXvalidentry];
+	string net_code;
+
+	int valid_entries = 0, invalidEntries = 0, produced_signalnum = 0;
+
+	// Generating the inputfile, outputifle and logfile
+
+	open_input(inputfile, logfile, cout, inputfilename);
+
+	open_file(logfile, cout, "golnaz.log");
+	open_file(outputfile, cout, "golnaz.out");
+
+	// Calling the read_input function
+
+	check_input_header(inputfile, outputfile);
+	print_message ( logfile, "header is read successfully!" );
+
+	check_input_signals(inputfile, entry, valid_entries, invalidEntries, produced_signalnum);
+	print_output(outputfile, logfile, entry[MAXvalidentry], valid_entries, invalidEntries, produced_signalnum);
+	print_message ( logfile, "signals are read correctly!" );
+
+	inputfile.close();
+	outputfile.close();
+
+	getchar();
+	return 0;
+}
+
+//================================ Declare functions =====================================/
+
+// Function for openning inputfile and logfile
+
+void open_file(ofstream & file, ostream & stream, string filename) {
+
+	file.open(filename.c_str());
+
+	if (file.fail()) {
+		print_message(file, "Error: cannot open the file. ");
+		exit(EXIT_FAILURE);
+	}
+}
+
+void open_input(ifstream &inputfile, ofstream & logfile, ostream & stream, string inputfilename) {
+
+	// Prompt the user for an input file
+	cout << "Enter input file name: ";
+	cin >> inputfilename;
+
+	inputfile.open(inputfilename.c_str());
+
+	if (inputfile.fail()) {
+		print_message(logfile, "Error: reading the file. ");
+		exit(EXIT_FAILURE);
+	}
+}
+
+// Function for printing the errors and results into the outputifle and terminal
+
+void print_message(ofstream & logfile, const string & statement) {
+	logfile << statement << "\n";
+	cout << statement << "\n";
+	return;
+}
+
+void print_position(ofstream & logfile, int & position) {
+	logfile << (position) << "\n";
+	cout << (position) << "\n";
+	return;
+}
 
 // Functions for input header inorder to check date and time validation 
 
-void check_date(ofstream & logfile, string date, string & month, string & day, string & year) {
+void check_date(ofstream & logfile, string & date, string & month, string & day, string & year, int & mm) {
 
-	int mm, dd, yyyy;
+	int dd, yyyy;
+	stringstream month1, day1, year1;
 
 	// Check for the date format (it must be mm/dd/year or mm-dd-year and 10 digits)
 
 	if (date.length() == 10) {
 
 		month = date.substr(0, 2);
-		stringstream(mm) >> month;
-		day = date.substr(3, 2);
-		stringstream(dd) >> day;
-		year = date.substr(6, 4);
-		stringstream(yyyy) >> year;
+		month1 << month;
+		month1 >> mm;
 
-		// meanwhile month, day and year should be valid numbers
+		string day = date.substr(3, 2);
+		day1 << day;
+		day1 >> dd;
+		string year = date.substr(6, 4);
 
-		if (!isdigit (mm || dd || yyyy)) {
+		year1 << year;
+		year1 >> yyyy;
+
+		//cout << "m : " << mm << "d :" << dd << "y : " << yyyy <<"\n";
+		// Meanwhile month, day and year should be valid numbers
+
+		if (!isdigit (date[0]) || !isdigit (date[1]) || !isdigit (date[3]) ||!isdigit (date[4])) {
 			print_message(logfile, "Error: Date of earthquake is not valid. ");
 			exit (EXIT_FAILURE);
+		}
+
+		if (!isdigit (date[6]) || !isdigit (date[7]) || !isdigit (date[8]) || !isdigit (date[9])) {
+			print_message(logfile, "Error: Date of earthquake is not valid. ");
+			//exit (EXIT_FAILURE);
 		} else {
 			if (mm < 0 || mm > 13 || dd < 0 || dd > 32 || yyyy < 1850 || yyyy > 2016) {
 				print_message(logfile, "Error: Date digits are not valid. ");
@@ -237,58 +266,71 @@ void check_date(ofstream & logfile, string date, string & month, string & day, s
 		if ((date[2] != '/' || date[5] != '/') && (date[2] != '-' || date[5] != '-')) {
 			print_message(logfile, "Error: Date format is not valid. ");
 			exit (EXIT_FAILURE);
-		}
+		} 
 	} else {
 		print_message(logfile, "Error: Date of earthquake is not valid. ");
 		exit (EXIT_FAILURE);
 	}
-
 }
+
 
 void check_time(ofstream & logfile, string time, string & hour, string & minute, string & second) {
 
-	int hr, min, sec;
+	int hr, min;
+	float  sec = 0;
+	stringstream hr1,min1,sec1;
+	earthquake eq_info;
 
 	// Check for the time format (must be hh:mm:ss.fff and 12 digits)
 
 	if (time.length() == 12) {
 
 		hour = time.substr(0, 2);
-		stringstream(hr) >> hour;
+		hr1 << hour;
+		hr1 >> hr;
 		minute = time.substr(3, 2);
-		stringstream(min) >> minute;
+		min1 << minute;
+		min1 >> min;
 		second = time.substr(6, 2);
-		stringstream(sec) >> second;
+		sec1 << second;
+		sec1 >> sec;
 
+		//cout << "hr : " << hr << "min :" << min << "sec : " << sec <<"\n";
 		//  Meanwhile the hour, minute, second should be valid numbers
 
-		if (!isdigit(hr || min || sec)) {
-			print_message(logfile, "Error: Time of earthquake is not valid.");
-		} else {
-			if (hr < 0 || hr > 24 || min < 0 || min > 60 || sec < 0.0009 || sec > 59.9999 ) {
-				print_message(logfile, "Error: Time digits are not valid. ");
-				exit (EXIT_FAILURE);
-			}
+		if (!isdigit (time[0]) || !isdigit (time[1]) || !isdigit (time[3]) ||!isdigit (time[4])) {
+			print_message(logfile, "Error: time of earthquake is not valid. ");
+			exit (EXIT_FAILURE);
+		}
+
+		if (!isdigit (time[6]) || !isdigit (time[7]) || !isdigit (time[9]) || !isdigit (time[10]) || !isdigit (time[11])) {
+			print_message(logfile, "Error: time of earthquake is not valid. ");
+			exit (EXIT_FAILURE);
+		}
+
+		if (hr < 0 || hr > 24 || min < 0 || min > 60 || sec < 0.0009 || sec > 59.9999 ) {
+			print_message(logfile, "Error: time digits are not valid. ");
+			//exit (EXIT_FAILURE);
 		}
 		if (time[2] != ':' || time[5] != ':' || time[8] != '.') {
-			print_message(logfile, "Error: Time format is not valid.");
-			exit (EXIT_FAILURE);
-		} else {
-			print_message(logfile, "Error: Time of earthquake is not valid.");
-			exit (EXIT_FAILURE);
-		}
+			print_message(logfile, "Error: time format is not valid.");
+			//exit (EXIT_FAILURE);
+		} 
+	} else {
+		print_message(logfile, "Error: time of earthquake is not valid.");
+		//exit (EXIT_FAILURE);
 	}
 }
 
 void check_time_zone(ofstream & logfile, string time_zone) {
-	
+
 	int tzl = 0;
 	string str = time_zone;
 	const char *cstr = str.c_str();
 	tzl = strlen(cstr);
 	if ((tzl != 3) || (!isalpha (time_zone[0])) || (!isalpha (time_zone[1])) || (!isalpha (time_zone[2]))) {
 		print_message(logfile, "Error: Time_zone is not valid");
-		exit (EXIT_FAILURE);
+		//exit (EXIT_FAILURE);
 	}
 }
 
@@ -301,16 +343,23 @@ string uppercase(string & s) {
 	return result;
 }
 
-void check_magnitude(ofstream & logfile, string magnitude_type, float magnitude_size) {
+void check_magnitude(ofstream & logfile, string magnitude_type, string magnitude_size) {
 
-	if ( magnitude_size < 0 ) {
+	int mag_size;
+	stringstream mg;
+	mg << magnitude_size;
+	mg >> mag_size;
+
+	if ( mag_size < 0 ) {
 		print_message(logfile, "Error: The magnitude_size is not valid");
-		exit (EXIT_FAILURE);
+		//exit (EXIT_FAILURE);
 	}
+	cout << magnitude_type;
 	string mt = uppercase(magnitude_type);
-	if ((mt == "ML") || (mt == "MS") || (mt == "MB") || (mt == "MW"));
-	print_message(logfile, "Error: The magnitude_type is not valid");
-	exit (EXIT_FAILURE);
+	if ((mt != "ML") && (mt != "MS") && (mt != "MB") && (mt != "MW")) {
+		print_message(logfile, "Error: The magnitude_type is not valid");
+		//exit (EXIT_FAILURE);
+	}
 }
 
 bool is_valid_Network_code(string net_code) {
@@ -323,51 +372,61 @@ bool is_valid_Network_code(string net_code) {
 	else return false;
 }
 
-bool is_valid_Station_code(string Stati_code) {                // 3 capital alphabetic character or 5 numeric characters
+bool is_valid_Station_code(string Stati_code) { 
 
-	if (Stati_code.length() == 5 && isdigit(Stati_code[0,5])) {
-		return true;
+	// 3 capital alphabetic character or 5 numeric characters
+
+	if (Stati_code.length() == 5) {
+		for (int i = 0; i < 4; i++) {
+			if (isdigit(Stati_code[i])) {
+				return true;
+			}
+		}
 	}
 
-	if (Stati_code.length() == 3 && isalpha(Stati_code[0,3])) {
-		if (isupper(Stati_code[0,3])) {
-			return true;
+	if (Stati_code.length() == 3) {
+		for (int i = 0; i < 4; i++) {
+			if (isalpha(Stati_code[i])) {
+				if (isupper(Stati_code[i])) {
+					return true;
+				}
+			}
 		}
 	}
 	return false;
 }
 
-bool is_valid_Type_of_band(string Band_type, Band_Type band_type) {
+bool is_valid_Type_of_band(string Band_type) {
 
 	string ss = uppercase(Band_type);
 	if (ss == "LONG-PERIOD") {
-		band_type = LongPeriod;
+		//band_type = LongPeriod;
 		return true;
 	}
 	if (ss == "SHORT_PERIOD") {
-		band_type = ShortPeriod;
+		//band_type = ShortPeriod;
 		return true;
 	}
 	if (ss == "BROADBAND") {
-		band_type = Broadband;
+		//band_type = Broadband;
 		return true;
 	}
 	return false;
 }
 
-bool is_valid_Type_of_instrument(string instrumenType, Inst_Type inst_type ) {
+bool is_valid_Type_of_instrument(string instrumenType) {
 
 	string ss = uppercase(instrumenType);
 	if (ss == "HIGH-GAIN") {
-		inst_type = HighGain;
+		//inst_type = HighGain;
 		return true;
 	}
 	if (ss == "LOW-GAIN") {
-		inst_type = LowGain;
+		//inst_type = LowGain;
 		return true;
 	}
 	if (ss == "ACCELEROMETER") {
-		inst_type = Accelerometer;
+		//inst_type = Accelerometer;
 		return true;
 	}
 	return false;
@@ -375,34 +434,34 @@ bool is_valid_Type_of_instrument(string instrumenType, Inst_Type inst_type ) {
 
 bool is_valid_Orientation (string orientation) {
 
-	// it is case insensitive so convert it to the uppercase and compare it
+	// It is case insensitive so convert it to the uppercase and compare it
+
 	string ss = uppercase(orientation);
+	int length = ss.length();
+	int length1 = abs (length);
 
-	if (ss.length() < 4) {
+	if (length1 < 4) {
 		if (isdigit(ss[0])) {
-            for (int i = 0; i < ss.length(); i++) {
-                if (!isdigit(ss[i])) {
-                    return false;
-                }
-            }
+			for (int i = 0; i < length1; i++) {
+				if (!isdigit(ss[i])) {
+					return false;
+				}
+			}
 
-            return true;
-        } else if (isalpha(ss[0])) {
-            for (int i = 0; i < ss.length(); i++) {
-                if (ss[i] != 'N' && ss[i] != 'E' && ss[i] != 'Z') {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-    }
-
-    return false;
-
+			return true;
+		} else if (isalpha(ss[0])) {
+			for (int i = 0; i < length1; i++) {
+				if (ss[i] != 'N' && ss[i] != 'E' && ss[i] != 'Z') {
+					return false;
+				}
+			}
+			return true;
+		}
+	}
+	return false;
 } 
 
-string Month_Num2namestr (Months aa) {
+string get_Month_Num2namestr (Months aa) {
 	switch (aa) {
 	case January:   return "January";
 	case February:  return "February";
@@ -438,7 +497,7 @@ Months month_num2enum (int a){
 	exit(EXIT_FAILURE);
 }
 
-string mag_type2str(Mag_type bb) {
+string get_mag_type2str(Mag_type bb) {
 	switch (bb) {
 	case ML:  return "Ml";
 	case Mb:  return "Mb";
@@ -462,7 +521,7 @@ Mag_type str2Mag_type(string b){
 	exit(EXIT_FAILURE);
 }
 
-string Net_code2namestr(Net_code cc) {
+string get_Net_code2namestr(Net_code cc) {
 	switch (cc) {
 	case CE:   return "CE";
 	case CI:   return "CI";
@@ -488,7 +547,7 @@ Net_code str2Net_code(string c){
 	exit(EXIT_FAILURE);
 }
 
-string Type_of_band2str (Band_Type dd) {
+string get_Type_of_band2str (Band_Type dd) {
 	switch (dd) {
 	case LongPeriod:   return "L";
 	case ShortPeriod:  return "B";
@@ -510,7 +569,7 @@ Band_Type str2Band_Type(string d){
 	exit(EXIT_FAILURE);
 }
 
-string Inst_Type2str(Inst_Type ee) {
+string get_Inst_Type2str(Inst_Type ee) {
 	switch (ee) {
 	case HighGain:       return "H";
 	case LowGain:        return "L";
@@ -532,222 +591,236 @@ Inst_Type Inst_Type_str2enum (string e){
 	exit(EXIT_FAILURE);
 }
 
-string Orientation2str(Orientation ff) {
-	switch (ff) {
-	case N:   return "N";
-	case E:   return  "E";
-	case Z:   return  "Z";
-	}
-	// It should never get here!!
-	exit(EXIT_FAILURE);
+/*
+
+string get_Orientation2str(Orientation ff) {
+switch (ff) {
+case N:   return "N";
+case E:   return  "E";
+case Z:   return  "Z";
+}
+// It should never get here!!
+exit(EXIT_FAILURE);
 }
 
-Orientation str2Orientation(string f) {                // this part needs correction????
+Orientation str2Orientation(string f) {            
 
-	string ss = uppercase(f);
+string ss = uppercase(f);
 
-	if (ss == "N")  return N;
-	if (ss == "E")  return E;
-	if (ss == "Z")  return Z;
+if (ss == "N")  return N;
+if (ss == "E")  return E;
+if (ss == "Z")  return Z;
 
-	// It should never get here!!
-	exit(EXIT_FAILURE);
+// It should never get here!!
+exit(EXIT_FAILURE);
 }
 
-// Defining the earthquake struct of event report propertires
-
-struct earthquake {
-	string id;
-	string date;
-	string time;
-	string timeZone;
-	string earthquake_name;
-	string latitude;
-	string longtidue;
-	string magnitude_type;
-	string magnitude_size;
-	string Enumber;
-};
-
-struct Date {
-	string day;
-	Months month;
-	string year;
-};
-
-// Defining the main struct of event report propertires
-
-struct station {
-	Net_code     net_code;
-	string       Station_Name;
-	Band_Type    band_type;
-	Inst_Type    inst_type;
-	Orientation  orientation;
-};
+*/
 
 // Check the header of the input file
-bool check_input_header(ifstream &inputFile, ofstream &outputFile) {
-	// (string & logfilename, station db[MAXSIZE], int Valid_entries, int & code, int entry_pos) {
+bool check_input_header(ifstream &inputfile, ofstream &outputifle) {
 
 	// Declare variable types:
+	// Date & Time variables("mm/dd/yyyy or mm-dd-yyyy hh:mm:ss.fff time_zone"):
 
-	int dd = 1, yyyy = 1850, mm = 1, i = 0;        // Date and Time variables in format : ("mm/dd/yyyy or mm-dd-yyyy hh:mm:ss.fff time_zone");
-	int hr = 0, min = 0;
-	float  sec = 0, magnitude_size;
 	double longitude = 0, latitude = 0, depth = 0;
+	int mm;
 
-	string date, day, month, year, time, hour, minute, second;
-	string line, time_zone, magnitude_type;
-	
+	string date, day, month, year, time, hour, minute, second; 
+	string line, time_zone, magnitude_type, magnitude_size;
+	string longitude1, latitude1, depth1;
+	stringstream longt, lat, dep;
+	ofstream logfile;
+
 	// First line for event ID
 
 	earthquake eq_info;
-	Date date_elements;
+	//Date date_elements;
 
-	getline(inputFile, line);
-    stringstream eventID (line);
-    eventID >> eq_info.id;
-    
-    getline(inputFile, line);
-    stringstream datetime (line);
-    datetime >> eq_info.date;
-    datetime >> eq_info.time;
-    datetime >> eq_info.timeZone;
+	getline(inputfile, line);
+	stringstream eventID (line);
+	eventID >> eq_info.id;
 
-    getline(inputFile, line);
-    eq_info.earthquake_name = line;
+	getline(inputfile, line);
+	stringstream datetime (line);
+	datetime >> eq_info.date;
+	date = eq_info.date;
 
-    getline(inputFile, line);
-    stringstream epicenter (line);
-    epicenter >> eq_info.latitude;
-    epicenter >> eq_info.longtidue;
-    epicenter >> eq_info.Enumber;
-    epicenter >> eq_info.magnitude_type;
-    epicenter >> eq_info.magnitude_size;
+	datetime >> eq_info.time;
+	time = eq_info.time;
+
+	datetime >> eq_info.timeZone;
+	time_zone = eq_info.timeZone;
+
+	getline(inputfile, line);
+	eq_info.earthquake_name = line;
+
+	getline(inputfile, line);
+	stringstream epicenter (line);
+
+	epicenter >> eq_info.longtidue;
+	longitude1 = eq_info.longtidue;
+	longt << longitude1;
+	longt >> longitude;
+
+	epicenter >> eq_info.latitude;
+	latitude1 = eq_info.latitude;
+	lat << latitude1;
+	lat >> latitude;
+
+	epicenter >> eq_info.depth;
+	depth1 = eq_info.depth;
+	dep << depth1;
+	dep >> depth;
+
+	epicenter >> eq_info.magnitude_type;
+	magnitude_type = eq_info.magnitude_type;
+
+	epicenter >> eq_info.magnitude_size;
+	magnitude_size = eq_info.magnitude_size;
 
 	// check the stored data validation
 
-	string Month_Num2namestr, day, year;
+	//string get_Month_Num2namestr, day, year;
 
-	check_date(logfile, eq_info.date, Month_Num2namestr, date_elements.day, date_elements.year);
+	check_date(logfile, date, month, day, year, mm);
 	check_time(logfile, time, hour, minute, second);
 	check_time_zone(logfile, time_zone);
-	check_magnitude(logfile, magnitude_type, magnitude_size);
+	check_magnitude(logfile, eq_info.magnitude_type, eq_info.magnitude_size);
 
-	print_message(logfile, "Header read correctly!");
+	// Print the header in the outputifle:
 
-	// Print the header in the outputfile:
-
-	outputfile << "# " << " " << Month_Num2namestr << " " << day << " " << year << " " 
+	outputifle << "# " << " " << get_Month_Num2namestr(month_num2enum(mm)) << " " << day << " " << year << " " 
 		<< time << " " << time_zone << " " << magnitude_type << " " << magnitude_size 
 		<< " " << eq_info.earthquake_name << " " << "[" << eq_info.id << "]" << "(" 
 		<< longitude << "," << " " << latitude << "," << " " << depth << ")" << "\n";
+
+	return 0;
 }
 
 // Check the table of reports from input file and return the signals output
-bool check_input_signals(ifstream & inputFile, ofstream & outputFile) {
-	
-	station Records[MAXSIZE];
-	int Num_of_read_entries = 0;
-	int entry_pos = 0;
-	int Valid_entries;     
-	int code = 0;
-	int Valid_entries = 0;
+bool check_input_signals(ifstream & inputfile, station entry[MAXvalidentry], int valid_entries, int invalidEntries, int produced_signalnum) {
+
 	int entry_pos = 0;
 
-	string net_code;
-	string band_type;
-	string inst_type;
-	string orientation;
+	ofstream logfile;
+	ofstream outputfile;
+	string net_code, Station_Name, band_type, inst_type, orientation;
+	string string;
 
-	int AA = (Num_of_read_entries - Valid_entries);
+	// check the stored data validation
 
-	outputfile << Valid_entries << "\n";
-	print_message(logfile, "Total invalid entries ignored:");
-	print_position(logfile, cout, AA);
-	print_message(logfile, "Total valid entries read:");
-	print_position(logfile, cout, Valid_entries);
-	print_message(logfile, "Total signal name produced");
-	print_position(logfile, cout, MAXSIZE);
-	print_message(logfile, "Finished!");
-
-	for (int i = 0; i < MAXSIZE; i++) {
-
-		outputfile << Netcode2namestr(Records[i].net_code) << "." << Records[i].Station_Name 
-			<< "." << Inst_Type2str(Records[i].inst_type) << Orientation_to_string(Records[i].orientation) << endl;
-	}
-
-	while (inputFile >> net_code && Valid_entries < MAXSIZE) {              // or wile inputfile.eof()
+	while (valid_entries < MAXvalidentry) {             // or wile inputfile.eof()
 
 		int m = -1;
 
-		if (!(inputfile >> net_code >> db[code].Station_Name >> band_type
-			>> inst_type >> orientation))
-			break;
+		cout << "reading signals";
+
+		inputfile >> net_code;
 
 		entry_pos++;
+
 		if (!is_valid_Network_code(net_code)) {
-			print_message(logfile, "Entry # ");
-			print_position(logfile, cout, entry_pos);
+			print_message(logfile, "Error: Entry # ");
+			print_position(logfile, entry_pos);
 			print_message(logfile, "ignored. Invalid_Network_code");
 			m++;
+			return true;
 		}
 
+		cout << entry_pos;
+
 		entry_pos++;
-		if (!is_valid_Station_code(net_code)) {                        // baresi lazem darad: 3 capital alphabetic character or 5 numeric characters
-			print_message(logfile, "Entry # ");
-			print_position(logfile, cout, entry_pos);
-			print_message(logfile, "ignored. Invalid_Stati_code");
+		inputfile >> Station_Name;
+		if (!is_valid_Station_code(Station_Name)) {
+			print_message(logfile, "Error: Entry # ");
+			print_position(logfile, entry_pos);
+			print_message(logfile, "ignored. Invalid_Station_code");
 			m++;
-		}
-		else {
-			stringstream str1;
-			int orl;
-			str1 << orientation.substr(0);
-			str1 >> orl;
-			//int orl = orientation.substr(0);
-			if (orl < 10000 || orl > 99999) {
-				print_message(logfile, "Entry # ");
-				print_position(logfile, cout, entry_pos);
-				print_message(logfile, "ignored. Invalid_Stati_code");
-				m++;
-			}
+			return true;
 		}
 
 		entry_pos++;
-		if (!is_valid_Type_of_band(band_type)) {
-			print_message(logfile, "Entry # ");
-			print_position(logfile, cout, entry_pos);
+		inputfile >> band_type;
+		if ( !is_valid_Type_of_band(band_type)) {
+			print_message(logfile, "Error: Entry # ");
+			print_position(logfile, entry_pos);
 			print_message(logfile, "ignored. Invalid Type_of_band");
 			m++;
+			return true;
 		}
 
 		entry_pos++;
-		if (!is_valid_Type_of_instrument(inst_type)) {
-			print_message(logfile, "Entry # ");
-			print_position(logfile, cout, entry_pos);
-			print_message(logfile, "ignored. Invalid Type_of_instrument");
+		inputfile >> inst_type;
+		if ( !is_valid_Type_of_instrument(inst_type)) {
+			print_message(logfile, "Error: Entry # ");
+			print_position(logfile, entry_pos);
+			print_message(logfile, "ignored. Invalid Type_of_band");
 			m++;
+			return true;
 		}
 
-		if (!is_valid_Orientation (orientation)) {
-			print_message(logfile, "Entry # ");
-			print_position(logfile, cout, entry_pos);
-			print_message(logfile, "ignored. Invalid Orientation");
+		entry_pos++;
+		inputfile >> orientation;
+		if ( !is_valid_Orientation(orientation)) {
+			print_message(logfile, "Error: Entry # ");
+			print_position(logfile, entry_pos);
+			print_message(logfile, "ignored. as an invalid Orientation");
 			m++;
+			return true;
+		}
 
+		if (m == -1) {
+
+			valid_entries++;
+			produced_signalnum = produced_signalnum + orientation.size(); 
+			
+			entry[valid_entries].net_code     =  str2Net_code(net_code);
+			entry[valid_entries].Station_Name =  Station_Name;
+			entry[valid_entries].band_type    =  str2Band_Type(band_type);
+			entry[valid_entries].inst_type    =  Inst_Type_str2enum(inst_type);
+			entry[valid_entries].orientation  =  orientation;
+
+			return true;
+
+		} else {
+		invalidEntries++;
 		}
-				db[code].net_code = str2Net_code(net_code);
-				db[code].Stati_code = str2Band_Type(Stati_code);         // baresi lazem darad?
-				db[code].band_type = str2Band_Type(band_type);
-				db[code].inst_type = Inst_Type_str2enum (inst_type);
-				db[code].orientation = string_to_Orientation(orientation);
-			}
-		}
-		if (m = -1) {
-			Valid_entries++;
-		}
-		code++;
+		return false;
 	}
-	return true;
+}
+
+void print_output(ofstream & outputfile, ofstream & logfile, station entry[MAXvalidentry], int valid_entries, int invalidEntries, int produced_signalnum) {
+
+	string orientation;
+	int length = orientation.length();
+	int length1 = abs (length);
+
+
+	// print all the signals to the output file
+			for (int i = 0; i < valid_entries; i++) {
+				for (int j = 0; j < length1; j++) {
+
+					stringstream records;
+					records << entry[valid_entries].net_code << ".";
+					records << entry[valid_entries].Station_Name << ".";
+					records << entry[valid_entries].band_type;
+					records << entry[valid_entries].inst_type;
+					records << entry[valid_entries].orientation[j] << endl;
+
+					outputfile << records.str();
+					cout << records.str();
+				}
+			}
+
+			outputfile << valid_entries << "\n";
+			print_message(logfile, "invalid entries ignored:");
+			print_position(logfile, invalidEntries);
+			print_message(logfile, "valid entries read:");
+			print_position(logfile, valid_entries);
+			print_message(logfile, "signal name produced");
+			print_position(logfile, cout, produced_signalnum);
+			print_message(logfile, "Finished!");
+
+			outputfile.close();
 }

@@ -159,14 +159,19 @@ int main() {
 
 	// Generating the inputfile, outputfile and logfile
 
+	print_message(logfile, "opening file: the input.in ");
+	print_message(logfile, "\n");
 	open_input(inputfile, logfile, cout, inputfilename);
 	open_file(logfile, cout, "golnaz.log");
 	open_file(outputfile, cout, "golnaz.out");
 
 	// Calling the read_input function
 
+	print_message(logfile, "processing input...");
+	print_message(logfile, "\n");
 	check_input_header(inputfile, outputfile);
 	print_message(logfile, "header is read successfully!");
+	print_message(logfile, "\n");
 
 	read_input_signals(inputfile, outputfile, entry, valid_entries, invalidEntries, produced_signalnum);
 	//print_output(outputfile, logfile, entry, valid_entries, invalidEntries, produced_signalnum);
@@ -210,14 +215,14 @@ void open_input(ifstream &inputfile, ofstream & logfile, ostream & stream, strin
 // Function for printing the errors and results into the outputfile and terminal
 
 void print_message(ofstream & logfile, const string & statement) {
-	logfile << statement << "\n";
-	cout << statement << "\n";
+	logfile << statement;
+	cout << statement;
 	return;
 }
 
 void print_position(ofstream & logfile, int & position) {
-	logfile << (position) << "\n";
-	cout << (position) << "\n";
+	logfile << (position);
+	cout << (position);
 	return;
 }
 
@@ -283,8 +288,6 @@ void set_date(earthquake & eq_info, ofstream & logfile, string & date, string & 
 		}
 
 		eq_info.date = date;
-
-		cout << "date : " << eq_info.date << "\n";
 
 		/*
 		Date.year = year;
@@ -560,7 +563,7 @@ bool set_valid_Type_of_band(station & entry, string Band_type) {
 		entry.band_type = LongPeriod;
 		return true;
 	}
-	if (ss == "SHORT_PERIOD") {
+	if (ss == "SHORT-PERIOD") {
 		entry.band_type = ShortPeriod;
 		return true;
 	}
@@ -725,7 +728,6 @@ bool check_input_header(ifstream & inputfile, ofstream & outputfile) {
 	// Declare variable types:
 	// Date & Time variables ("mm/dd/yyyy or mm-dd-yyyy hh:mm:ss.fff time_zone"):
 
-	double longitude = 0, latitude = 0, depth = 0;
 	int mm;
 
 	string date, day, month, year, time, hour, minute, second;
@@ -767,8 +769,6 @@ bool check_input_header(ifstream & inputfile, ofstream & outputfile) {
 
 	inputfile >> magnitude_type;
 
-	cout << "mag_type : " << magnitude_type << "\n";
-
 	set_magnitude_type(eq_info, logfile, magnitude_type);
 	//get_mag_type2str(eq_info, magnitude_type);
 
@@ -802,63 +802,57 @@ void read_input_signals(ifstream & inputfile, ofstream& outputfile, station entr
 	while ((inputfile >> Net_code) && valid_entries < MAXvalidentry) {
 		int m = -1;
 
-		cout << "reading signals";
-
 		entry_pos++;
-
-		;
 		if (!set_valid_Network_code(entry[i], Net_code)) {
 			print_message(logfile, "Error: Entry # ");
 			print_position(logfile, entry_pos);
-			print_message(logfile, "ignored. Invalid_Network_code");
+			print_message(logfile, " ignored. Invalid_Network_code");
+			print_message(logfile, "\n");
 			m++;
 		}
 
-		cout << entry_pos;
-
-		entry_pos++;
 		inputfile >> Station_Name;
 		if (!set_valid_Station_code(entry[i], Station_Name)) {
 			print_message(logfile, "Error: Entry # ");
 			print_position(logfile, entry_pos);
-			print_message(logfile, "ignored. Invalid_Station_code");
+			print_message(logfile, " ignored. Invalid_Station_code");
+			print_message(logfile, "\n");
 			m++;
 
 		} else {
 			entry[i].Station_Name = Station_Name;
 		}
 
-		entry_pos++;
 		inputfile >> band_Type;
 		if (!set_valid_Type_of_band(entry[i], band_Type)) {
 			print_message(logfile, "Error: Entry # ");
 			print_position(logfile, entry_pos);
-			print_message(logfile, "ignored. Invalid Type_of_band");
+			print_message(logfile, " ignored. Invalid Type_of_band");
+			print_message(logfile, "\n");
 			m++;
 
 		} else {
 			entry[i].band_type = str2Band_Type(band_Type);//band_Type;
 		}
 
-		entry_pos++;
 		inputfile >> inst_type;
 		if (!set_valid_Type_of_instrument(entry[i], inst_type)) {
 			print_message(logfile, "Error: Entry # ");
 			print_position(logfile, entry_pos);
-			print_message(logfile, "ignored. Invalid Type_of_band");
+			print_message(logfile, " ignored. Invalid Type_of_band");
+			print_message(logfile, "\n");
 			m++;
 
 		} else { 
 			entry[i].inst_type = Inst_Type_str2enum(inst_type);
 		}
 
-
-		entry_pos++;
 		inputfile >> orientation;
 		if (!set_valid_Orientation(entry[i], orientation)) {
 			print_message(logfile, "Error: Entry # ");
 			print_position(logfile, entry_pos);
-			print_message(logfile, "ignored. as an invalid Orientation");
+			print_message(logfile, " ignored. as an invalid Orientation");
+			print_message(logfile, "\n");
 			m++;
 
 		} else {
@@ -881,11 +875,15 @@ void read_input_signals(ifstream & inputfile, ofstream& outputfile, station entr
 	outputfile << valid_entries << "\n";
 	print_message(logfile, "invalid entries ignored:");
 	print_position(logfile, invalidEntries);
+	print_message(logfile, "\n");
 	print_message(logfile, "valid entries read:");
 	print_position(logfile, valid_entries);
-	print_message(logfile, "signal name produced");
+	print_message(logfile, "\n");
+	print_message(logfile, "signal name produced:");
 	print_position(logfile, produced_signalnum);
+	print_message(logfile, "\n");
 	print_message(logfile, "Finished!");
+	print_message(logfile, "\n");
 
 }
 
@@ -898,7 +896,7 @@ void print_output(ofstream & outputfile, ofstream & logfile, station entry[MAXva
 	for (int i = 0; i < valid_entries; i++) {
 		orientation = get_Orientation(entry[i]);
 
-		for (int j = 0; j < orientation.length(); j++) {
+		for (int j = 0; j < (int) orientation.length(); j++) {
 			stringstream records;
 			records << get_Net_code2namestr(entry[i]) << "." ;
 			records << get_Type_of_band2str(entry[i]) << ".";
@@ -907,7 +905,6 @@ void print_output(ofstream & outputfile, ofstream & logfile, station entry[MAXva
 			records << orientation[j] << "\n";
 
 			outputfile << records.str();
-			cout << records.str();
 		}
 	}
 }
